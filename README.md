@@ -40,7 +40,22 @@
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/yourusername/DynamicAPI.git", from: "1.0.0")
+    .package(url: "https://github.com/iSoldLeo/DynamicAPI.git", branch: "main")
+]
+```
+
+然后在你的 Target 中添加依赖：
+
+```swift
+targets: [
+    .target(
+        name: "YourCoreTarget",
+        dependencies: [
+            .product(name: "DynamicAPI", package: "DynamicAPI"),
+            // 如果需要 Combine 支持
+            .product(name: "DynamicAPICombine", package: "DynamicAPI")
+        ]
+    )
 ]
 ```
 
