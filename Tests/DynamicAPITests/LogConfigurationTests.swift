@@ -28,7 +28,7 @@ final class LogConfigurationTests: XCTestCase {
         XCTAssertEqual(DynamicAPILogger.configuration.subsystem, "com.example.myapp")
         
         // Verify that new loggers use this subsystem (implementation detail check)
-        let clientLog = DynamicAPILogger.client
+        _ = DynamicAPILogger.client
         // In a real black-box test we might not be able to check the internal OSLog object's subsystem easily
         // unless we expose it. Assuming DynamicAPILogger exposes `client` which is `OSLog`.
         // OSLog properties are not easily inspectable in Swift.
