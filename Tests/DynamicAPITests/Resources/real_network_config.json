@@ -1,0 +1,32 @@
+{
+  "version": "1.0",
+  "globals": {
+    "base_url": "https://echo.apifox.com"
+  },
+  "profiles": {},
+  "operations": {
+    "get_ip": {
+      "path": "/ip",
+      "method": "GET"
+    },
+    "post_data": {
+      "path": "/post",
+      "method": "POST",
+      "body": {
+        "foo": "$foo_val",
+        "bar": "static_bar"
+      }
+    },
+    "get_args": {
+      "path": "/get",
+      "method": "GET",
+      "params": {
+        "q": "$query"
+      }
+    },
+    "status_404": {
+        "path": "/status/404",
+        "method": "GET"
+    }
+  }
+}

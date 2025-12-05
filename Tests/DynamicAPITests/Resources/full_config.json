@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "globals": {
+    "base_url": "https://api.example.com",
+    "headers": {
+      "User-Agent": "DynamicAPI/1.0",
+      "Accept": "application/json"
+    },
+    "timeout": 30
+  },
+  "profiles": {
+    "dev": {
+      "base_url": "https://dev.api.example.com",
+      "headers": {
+        "X-Environment": "Development"
+      }
+    },
+    "staging": {
+      "base_url": "https://staging.api.example.com"
+    }
+  },
+  "param_presets": {
+    "pagination": {
+      "page": "1",
+      "limit": "20"
+    },
+    "device_info": {
+      "platform": "ios",
+      "version": "1.0"
+    }
+  },
+  "operations": {
+    "get_user": {
+      "path": "/users/$id",
+      "method": "GET",
+      "headers": {
+        "X-Request-ID": "$req_id"
+      }
+    },
+    "search_items": {
+      "path": "/search",
+      "method": "GET",
+      "params": {
+        "q": "$query",
+        "sort": "desc"
+      },
+      "use_presets": ["pagination", "device_info"]
+    },
+    "create_order": {
+      "path": "/orders",
+      "method": "POST",
+      "body": {
+        "product_id": "$pid",
+        "quantity": "$qty"
+      },
+      "response_mapping": "order_mapper"
+    },
+    "upload_avatar": {
+      "path": "/users/$id/avatar",
+      "method": "PUT",
+      "headers": {
+        "Content-Type": "image/png"
+      }
+    }
+  }
+}

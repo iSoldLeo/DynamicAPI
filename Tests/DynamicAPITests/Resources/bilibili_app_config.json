@@ -1,0 +1,17 @@
+{
+    "version": "1.0",
+    "globals": {
+        "base_url": "https://app.bilibili.com"
+    },
+    "operations": {
+        "app_search": {
+            "path": "/x/v2/search",
+            "method": "GET",
+            "params": {
+                "keyword": "$keyword",
+                "appkey": "FAKE_APP_KEY"
+            },
+            "processors": ["BilibiliAppSigner"]
+        }
+    }
+}

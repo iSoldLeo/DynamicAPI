@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "globals": { "base_url": "https://api.example.com" },
+  "operations": {
+    "get_with_body_op": {
+      "path": "/test",
+      "method": "GET",
+      "body": { "key": "value" }
+    }
+  }
+}

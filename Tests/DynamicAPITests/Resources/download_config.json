@@ -1,0 +1,15 @@
+{
+    "version": "1.0",
+    "globals": {
+        "base_url": "https://httpbin.org",
+        "headers": {}
+    },
+    "profiles": {},
+    "operations": {
+        "download_image": {
+            "path": "/image/png",
+            "method": "GET",
+            "task_type": "download"
+        }
+    }
+}

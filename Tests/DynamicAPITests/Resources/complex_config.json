@@ -1,0 +1,81 @@
+{
+  "version": "1.0",
+  "globals": {
+    "base_url": "https://api.example.com"
+  },
+  "operations": {
+    "nested_body_op": {
+      "path": "/nested",
+      "method": "POST",
+      "body": {
+        "user": {
+          "id": 123,
+          "active": true
+        },
+        "tags": ["a", "b"]
+      }
+    },
+    "mixed_types_op": {
+      "path": "/mixed",
+      "method": "POST",
+      "body": {
+        "count": 42,
+        "score": 3.14,
+        "is_valid": false
+      }
+    },
+    "post_query_no_body_op": {
+      "path": "/action",
+      "method": "POST",
+      "params": {
+        "id": "123",
+        "force": "true"
+      },
+      "encoding": "query"
+    },
+    "post_body_only_op": {
+      "path": "/create",
+      "method": "POST",
+      "body": {
+        "name": "New Item"
+      }
+    },
+    "post_body_and_query_op": {
+      "path": "/update",
+      "method": "POST",
+      "params": {
+        "id": "123"
+      },
+      "body": {
+        "status": "active"
+      },
+      "encoding": "json"
+    },
+    "get_query_op": {
+      "path": "/search",
+      "method": "GET",
+      "params": {
+        "q": "swift"
+      }
+    },
+    "unregistered_mapper_op": {
+      "path": "/data",
+      "method": "GET",
+      "response_mapping": "MissingMapper"
+    },
+    "failing_mapper_op": {
+      "path": "/data",
+      "method": "GET",
+      "response_mapping": "FailingMapper"
+    },
+    "create_order": {
+      "path": "/orders",
+      "method": "POST",
+      "body": {
+        "product_id": "$pid",
+        "quantity": "$qty"
+      },
+      "response_mapping": "order_mapper"
+    }
+  }
+}

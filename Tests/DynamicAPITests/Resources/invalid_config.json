@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "globals": {
+    "headers": { "User-Agent": "DynamicAPI" }
+  },
+  "operations": {
+    "broken_op": {
+      "method": "GET"
+    }
+  }
+}

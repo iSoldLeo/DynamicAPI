@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:DynamicAPI}",
+            "name": "Debug DynamicAPIExample",
+            "target": "DynamicAPIExample",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug DynamicAPIExample"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:DynamicAPI}",
+            "name": "Release DynamicAPIExample",
+            "target": "DynamicAPIExample",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release DynamicAPIExample"
+        }
+    ]
+}

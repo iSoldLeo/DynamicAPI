@@ -1,0 +1,26 @@
+{
+    "version": "1.0",
+    "globals": {
+        "base_url": "https://passport.bilibili.com",
+        "headers": {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://www.bilibili.com/"
+        }
+    },
+    "profiles": {},
+    "operations": {
+        "get_qrcode": {
+            "path": "/x/passport-login/web/qrcode/generate",
+            "method": "GET",
+            "description": "获取登录二维码和Key"
+        },
+        "poll_login": {
+            "path": "/x/passport-login/web/qrcode/poll",
+            "method": "GET",
+            "params": {
+                "qrcode_key": "$key"
+            },
+            "description": "轮询检查扫码状态"
+        }
+    }
+}

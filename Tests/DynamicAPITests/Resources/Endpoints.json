@@ -1,0 +1,51 @@
+{
+    "version": "1.0.0",
+    "globals": {
+        "base_url": "https://api.example.com/v1",
+        "headers": {
+            "Content-Type": "application/json",
+            "User-Agent": "DynamicAPI/1.0"
+        },
+        "timeout": 30
+    },
+    "profiles": {
+        "dev": {
+            "base_url": "https://dev-api.example.com/v1"
+        },
+        "prod": {
+            "base_url": "https://api.example.com/v1"
+        }
+    },
+    "param_presets": {
+        "pagination": {
+            "page": "1",
+            "limit": "20"
+        }
+    },
+    "operations": {
+        "get_user": {
+            "path": "/users/$user_id",
+            "method": "GET",
+            "params": {
+                "include_details": "true"
+            }
+        },
+        "list_feed": {
+            "path": "/feed",
+            "method": "GET",
+            "use_presets": ["pagination"],
+            "params": {
+                "type": "$feed_type"
+            },
+            "response_mapping": "FeedMapper"
+        },
+        "create_post": {
+            "path": "/posts",
+            "method": "POST",
+            "body": {
+                "title": "$title",
+                "content": "$content"
+            }
+        }
+    }
+}

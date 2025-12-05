@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "globals": { "base_url": "https://api.example.com" },
+  "operations": {
+    "missing_preset_op": {
+      "path": "/test",
+      "method": "GET",
+      "use_presets": ["non_existent_preset"]
+    }
+  }
+}

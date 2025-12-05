@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "globals": { "base_url": "https://api.example.com" },
+  "operations": {
+    "array_body_op": {
+      "path": "/array",
+      "method": "POST",
+      "body": [
+        { "id": 1, "val": "$val1" },
+        { "id": 2, "val": "$val2" }
+      ]
+    },
+    "primitive_body_op": {
+      "path": "/primitive",
+      "method": "POST",
+      "body": 42
+    },
+    "string_body_op": {
+        "path": "/string",
+        "method": "POST",
+        "body": "raw_string_body"
+    }
+  }
+}
