@@ -1,4 +1,4 @@
-![DynamicAPI Logo](5007118adc2ef5f41ae56b5297f2bd0a11cbc6081eae854c624ba7fbe16d7cf5.png)
+![DynamicAPI Logo](Logo.png)
 
 # DynamicAPI
 
