@@ -1,6 +1,6 @@
 # DynamicAPI
 
-基于 Moya 构建的配置驱动型动态 API 客户端。通过 JSON 配置文件定义 API 接口，极大简化网络层代码。
+使用Swift，基于 Moya 构建的配置驱动型动态 API 客户端。通过 JSON 配置文件定义 API 接口，极大简化网络层代码。
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![Swift](https://img.shields.io/badge/Swift-5.5+-orange.svg)](https://swift.org)
