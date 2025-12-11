@@ -56,29 +56,9 @@ public class DynamicAPIClient: @unchecked Sendable {
                         try processor.process(params: &resolvedParams, headers: &resolvedHeaders, operation: operation, runtimeValues: params)
                     } else {
                         os_log("⚠️ Processor not found: %{public}@", log: DynamicAPILogger.client, type: .error, name)
-                        // 是否应该抛出异常？目前先仅记录警告。
                     }
                 }
             }
-            
-            // 使用处理后的参数/Headers 重构 Target
-            // 注意：DynamicTarget 构造函数目前在内部解析参数。
-            // 我们需要一种方法来传递已经解析过的参数。
-            // 让我们修改 DynamicTarget 以可选地接受已解析的参数，或者创建一个新的 init。
-            // 或者更好的是，由于 DynamicTarget 逻辑很复杂（路径解析等），
-            // 我们应该让 DynamicTarget 进行初始解析，然后应用处理器？
-            // 但是 DynamicTarget 是不可变结构体。
-            
-            // 替代方案：将处理器传递给 DynamicTarget？不，DynamicTarget 不应该知道处理器的逻辑（关注点分离）。
-            // 最佳方法：
-            // 1. 解析路径（使用 runtimeValues）
-            // 2. 解析参数（使用 runtimeValues）
-            // 3. 解析 Body（使用 runtimeValues）
-            // 4. 将处理器应用于参数/Body/Headers
-            // 5. 使用最终值创建 DynamicTarget。
-            
-            // 为此，我们需要公开解析逻辑或使 DynamicTarget init 接受最终值。
-            // 让我们向 DynamicTarget 添加一个新的 init，该 init 接受预解析的值。
             
             let resolvedPath = try ParamResolver.resolvePath(operation.path, runtimeValues: params)
             
@@ -87,21 +67,6 @@ public class DynamicAPIClient: @unchecked Sendable {
             if let bodyTemplate = operation.body {
                 let jsonTemplate = JSONValue(bodyTemplate)
                 resolvedBody = try ParamResolver.resolveJSON(template: jsonTemplate, runtimeValues: params)
-            }
-            
-            // 应用处理器（现在我们有了 resolvedParams, resolvedHeaders, resolvedBody）
-            // 等等，RequestProcessor 协议目前只接受 params 和 headers。
-            // 如果我们需要对 Body 进行签名，我们需要更新协议。
-            // 对于 Bilibili，签名通常涉及查询参数 + App Secret。
-            // 但是有时 Body 参数也需要签名？
-            // 按照协议，目前让我们坚持使用 params（Query/Form）。
-            
-            if let processorNames = operation.processors {
-                for name in processorNames {
-                    if let processor = getProcessor(for: name) {
-                        try processor.process(params: &resolvedParams, headers: &resolvedHeaders, operation: operation, runtimeValues: params)
-                    }
-                }
             }
             
             let target = DynamicTarget(

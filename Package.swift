@@ -46,7 +46,7 @@ let package = Package(
         ),
         .testTarget(
             name: "DynamicAPITests",
-            dependencies: ["DynamicAPI"],
+            dependencies: ["DynamicAPI", "DynamicAPICombine"],
             resources: [
                 .process("Resources")
             ]

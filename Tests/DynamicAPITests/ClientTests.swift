@@ -1,5 +1,7 @@
 import XCTest
+import Combine
 @testable import DynamicAPI
+import DynamicAPICombine
 import Moya
 
 // 模拟模型
@@ -38,11 +40,19 @@ struct FailingMapper: ResponseMapper {
     }
 }
 
+private struct CountingProcessor: RequestProcessor {
+    nonisolated(unsafe) static var callCount = 0
+    func process(params: inout [String : Any], headers: inout [String : String], operation: ResolvedOperation, runtimeValues: [String : Any]) throws {
+        CountingProcessor.callCount += 1
+    }
+}
+
 final class ClientTests: XCTestCase {
     
     var loader: ConfigLoader!
     var provider: MoyaProvider<DynamicTarget>!
     var client: DynamicAPIClient!
+    var cancellables = Set<AnyCancellable>()
     
     override func setUpWithError() throws {
         let bundle = Bundle.module
@@ -201,5 +211,122 @@ final class ClientTests: XCTestCase {
         
         let order: Order = try await testClient.call("create_order", params: ["pid": "1", "qty": 1])
         XCTAssertEqual(order.status, "shipped")
+    }
+
+    func testProcessorRunsOnceInAsyncCall() async throws {
+        let json = """
+        {
+            "version": "1.0",
+            "globals": { "base_url": "https://api.example.com" },
+            "operations": {
+                "with_processor": {
+                    "path": "/ping",
+                    "method": "GET",
+                    "processors": ["Counting"],
+                    "params": {"q": "$q"}
+                }
+            }
+        }
+        """
+        let localLoader = try ConfigLoader.load(from: json.data(using: .utf8)!)
+        CountingProcessor.callCount = 0
+        let endpointClosure = { (target: DynamicTarget) -> Endpoint in
+            Endpoint(
+                url: URL(target: target).absoluteString,
+                sampleResponseClosure: { .networkResponse(200, #"{"ok":true}"#.data(using: .utf8)!) },
+                method: target.method,
+                task: target.task,
+                httpHeaderFields: target.headers
+            )
+        }
+        let testProvider = MoyaProvider<DynamicTarget>(endpointClosure: endpointClosure, stubClosure: MoyaProvider.immediatelyStub)
+        let testClient = DynamicAPIClient(configLoader: localLoader, provider: testProvider)
+        testClient.register(processor: CountingProcessor(), for: "Counting")
+        struct Ok: Decodable { let ok: Bool }
+        let _: Ok = try await testClient.call("with_processor", params: ["q": "1"])
+        XCTAssertEqual(CountingProcessor.callCount, 1)
+    }
+
+    @MainActor
+    func testCombineFiltersStatusCodes() {
+        let json = """
+        {
+            "version": "1.0",
+            "globals": { "base_url": "https://api.example.com" },
+            "operations": {
+                "combo": { "path": "/combo", "method": "GET" }
+            }
+        }
+        """
+        let localLoader = try! ConfigLoader.load(from: json.data(using: .utf8)!)
+        let endpointClosure = { (target: DynamicTarget) -> Endpoint in
+            Endpoint(
+                url: URL(target: target).absoluteString,
+                sampleResponseClosure: { .networkResponse(404, Data()) },
+                method: target.method,
+                task: target.task,
+                httpHeaderFields: target.headers
+            )
+        }
+        let testProvider = MoyaProvider<DynamicTarget>(endpointClosure: endpointClosure, stubClosure: MoyaProvider.immediatelyStub)
+        let testClient = DynamicAPIClient(configLoader: localLoader, provider: testProvider)
+        let expectation = expectation(description: "Combine filters status codes")
+        testClient.callPublisher("combo", params: [:])
+            .sink(receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                    if case DynamicAPIError.networkError(let moyaError) = error, case .statusCode(let response) = moyaError {
+                        XCTAssertEqual(response.statusCode, 404)
+                        expectation.fulfill()
+                    }
+                }
+            }, receiveValue: { _ in
+                XCTFail("Should not receive value on 404")
+            })
+            .store(in: &cancellables)
+        waitForExpectations(timeout: 1.0)
+    }
+
+    @MainActor
+    func testCombineCallPublisherRunsProcessors() {
+        let json = """
+        {
+            "version": "1.0",
+            "globals": { "base_url": "https://api.example.com" },
+            "operations": {
+                "with_processor": {
+                    "path": "/ping",
+                    "method": "GET",
+                    "processors": ["Counting"],
+                    "params": {"q": "$q"}
+                }
+            }
+        }
+        """
+        let localLoader = try! ConfigLoader.load(from: json.data(using: .utf8)!)
+        CountingProcessor.callCount = 0
+        let endpointClosure = { (target: DynamicTarget) -> Endpoint in
+            Endpoint(
+                url: URL(target: target).absoluteString,
+                sampleResponseClosure: { .networkResponse(200, Data()) },
+                method: target.method,
+                task: target.task,
+                httpHeaderFields: target.headers
+            )
+        }
+        let testProvider = MoyaProvider<DynamicTarget>(endpointClosure: endpointClosure, stubClosure: MoyaProvider.immediatelyStub)
+        let testClient = DynamicAPIClient(configLoader: localLoader, provider: testProvider)
+        testClient.register(processor: CountingProcessor(), for: "Counting")
+        let expectation = expectation(description: "Processors executed for Combine Response publisher")
+        testClient.callPublisher("with_processor", params: ["q": "1"])
+            .sink(receiveCompletion: { completion in
+                if case .failure(let error) = completion {
+                    XCTFail("Unexpected failure: \(error)")
+                } else {
+                    expectation.fulfill()
+                }
+            }, receiveValue: { _ in })
+            .store(in: &cancellables)
+        waitForExpectations(timeout: 1.0)
+        XCTAssertEqual(CountingProcessor.callCount, 1)
     }
 }

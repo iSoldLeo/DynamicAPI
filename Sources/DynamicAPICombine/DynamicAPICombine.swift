@@ -54,21 +54,17 @@ public extension DynamicAPIClient {
                     }
                 })
                 .tryMap { response -> T in
+                    let validated = try response.filterSuccessfulStatusCodes()
                     if let mappingKey = operation.responseMapping, let mapper = self.getMapper(for: mappingKey) {
-                        return try mapper.map(response, to: T.self)
+                        return try mapper.map(validated, to: T.self)
                     } else {
-                        return try response.map(T.self)
+                        return try validated.map(T.self)
                     }
                 }
                 .mapError { error -> Error in
                     if let dynamicError = error as? DynamicAPIError {
                         return dynamicError
                     }
-                    // MoyaError is the Failure type of the upstream publisher, so this cast is technically redundant but safe.
-                    // However, the compiler warns about it.
-                    // Since we are in mapError, 'error' is the Failure type of the upstream.
-                    // provider.requestPublisher returns AnyPublisher<Response, MoyaError>.
-                    // So 'error' IS MoyaError.
                     if let moyaError = error as? MoyaError {
                         switch moyaError {
                         case .objectMapping, .jsonMapping, .stringMapping:
@@ -88,7 +84,33 @@ public extension DynamicAPIClient {
     func callPublisher(_ operationName: String, params: [String: Any] = [:]) -> AnyPublisher<Response, Error> {
         do {
             let operation = try configLoader.resolve(operation: operationName)
-            let target = try DynamicTarget(operation: operation, runtimeValues: params)
+            
+            // Pre-resolve params and headers to align with async/await behavior
+            var resolvedParams = try ParamResolver.resolve(templates: operation.params, runtimeValues: params)
+            var resolvedHeaders = operation.headers
+            
+            if let processorNames = operation.processors {
+                for name in processorNames {
+                    if let processor = getProcessor(for: name) {
+                        try processor.process(params: &resolvedParams, headers: &resolvedHeaders, operation: operation, runtimeValues: params)
+                    }
+                }
+            }
+            
+            let resolvedPath = try ParamResolver.resolvePath(operation.path, runtimeValues: params)
+            var resolvedBody: JSONValue? = nil
+            if let bodyTemplate = operation.body {
+                let jsonTemplate = JSONValue(bodyTemplate)
+                resolvedBody = try ParamResolver.resolveJSON(template: jsonTemplate, runtimeValues: params)
+            }
+            
+            let target = DynamicTarget(
+                operation: operation,
+                resolvedPath: resolvedPath,
+                resolvedParams: resolvedParams,
+                resolvedBody: resolvedBody,
+                resolvedHeaders: resolvedHeaders
+            )
             
             return provider.requestPublisher(target)
                 .handleEvents(receiveSubscription: { _ in
@@ -102,9 +124,22 @@ public extension DynamicAPIClient {
                         print("[DynamicAPI] 🏁 [Combine] Completed")
                     }
                 })
+                .tryMap { response in
+                    try response.filterSuccessfulStatusCodes()
+                }
                 .mapError { error -> Error in
-                    // error is MoyaError here
-                    return DynamicAPIError.networkError(originalError: error)
+                    if let dynamicError = error as? DynamicAPIError {
+                        return dynamicError
+                    }
+                    if let moyaError = error as? MoyaError {
+                        switch moyaError {
+                        case .objectMapping, .jsonMapping, .stringMapping:
+                            return DynamicAPIError.mappingError(reason: "Moya mapping failed", originalError: moyaError)
+                        default:
+                            return DynamicAPIError.networkError(originalError: moyaError)
+                        }
+                    }
+                    return DynamicAPIError.unknownError(originalError: error)
                 }
                 .eraseToAnyPublisher()
         } catch {

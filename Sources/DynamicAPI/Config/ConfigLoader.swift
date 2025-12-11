@@ -7,6 +7,24 @@ public class ConfigLoader: @unchecked Sendable {
     
     private var _currentProfile: String?
     private let queue = DispatchQueue(label: "com.dynamicapi.configloader.profile", attributes: .concurrent)
+
+    // 安全策略：限定 base URL 必须为 HTTPS，且可选按域名白名单限制。
+    public struct SecurityPolicy: Sendable {
+        public var requireHTTPS: Bool = true
+        public var allowedBaseHosts: Set<String>? = nil
+        public init(requireHTTPS: Bool = true, allowedBaseHosts: Set<String>? = nil) {
+            self.requireHTTPS = requireHTTPS
+            self.allowedBaseHosts = allowedBaseHosts
+        }
+    }
+    // 若需要编译时强制域名白名单，可在此硬编码（示例：["api.example.com"]）。
+    private static let compiledAllowedBaseHosts: Set<String>? = nil
+    private static let policyLock = NSLock()
+    nonisolated(unsafe) private static var _securityPolicy = SecurityPolicy()
+    public static var securityPolicy: SecurityPolicy {
+        get { policyLock.lock(); defer { policyLock.unlock() }; return _securityPolicy }
+        set { policyLock.lock(); defer { policyLock.unlock() }; _securityPolicy = newValue }
+    }
     
     public var currentProfile: String? {
         get {
@@ -91,6 +109,21 @@ public class ConfigLoader: @unchecked Sendable {
         guard let baseURL = URL(string: baseURLString) else {
             os_log("❌ Invalid Base URL: %{public}@", log: DynamicAPILogger.config, type: .error, baseURLString)
             throw DynamicAPIError.configurationError(reason: "Invalid Base URL: \(baseURLString)")
+        }
+        // 基础安全校验
+        let policy = ConfigLoader.securityPolicy
+        let allowedHosts = policy.allowedBaseHosts ?? ConfigLoader.compiledAllowedBaseHosts
+        if policy.requireHTTPS {
+            if baseURL.scheme?.lowercased() != "https" {
+                os_log("❌ Security Violation: Non-HTTPS base URL not allowed: %{public}@", log: DynamicAPILogger.config, type: .fault, baseURL.absoluteString)
+                throw DynamicAPIError.configurationError(reason: "Security Violation: Non-HTTPS base URL is not allowed")
+            }
+        }
+        if let allowedHosts = allowedHosts {
+            guard let host = baseURL.host, allowedHosts.contains(host) else {
+                os_log("❌ Security Violation: Base URL host not in allowlist: %{public}@", log: DynamicAPILogger.config, type: .fault, baseURL.absoluteString)
+                throw DynamicAPIError.configurationError(reason: "Security Violation: Base URL host not allowed")
+            }
         }
         
         // 解析参数（包括预设）

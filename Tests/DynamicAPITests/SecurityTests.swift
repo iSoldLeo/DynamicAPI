@@ -103,7 +103,7 @@ final class SecurityTests: XCTestCase {
     func testQueryParamInjection() async throws {
         // Injecting a URL into a query parameter
         // Should be encoded and not affect the host/path
-        let params = ["q": "https://evil.com"]
+        _ = ["q": "https://evil.com"]
         
         // Assuming we have an operation with query params. 
         // "header_injection" has no params defined in the inline config above.
